@@ -1,4 +1,3 @@
-```markdown
 # Calculadora de Recomendação de Autoclaves e Lavadoras
 
 Este projeto é uma calculadora para recomendar o número e os modelos de autoclaves e lavadoras necessárias para um hospital com base em diversas métricas e parâmetros fornecidos.
