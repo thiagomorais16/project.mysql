@@ -23,4 +23,25 @@ const HospitalData = database.define("HospitalData", {
   num_lavadoras: { type: DataTypes.INTEGER, allowNull: false },
 });
 
-module.exports = HospitalData;
+const Lavadora = database.define("Lavadora", {
+  marca: { type: DataTypes.STRING, allowNull: false },
+  modelo: { type: DataTypes.STRING, allowNull: false },
+  volume_total_litros: { type: DataTypes.FLOAT, allowNull: false },
+  tempo_ciclo_instrumentos_minutos: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  tempo_ciclo_ventilatoria_minutos: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+});
+
+const Autoclave = database.define("Autoclave", {
+  marca: { type: DataTypes.STRING, allowNull: false },
+  modelo: { type: DataTypes.STRING, allowNull: false },
+  capacidade_pico_litros: { type: DataTypes.FLOAT, allowNull: false },
+  tempo_ciclo_minutos: { type: DataTypes.INTEGER, allowNull: false },
+});
+
+module.exports = { HospitalData, Lavadora, Autoclave };
