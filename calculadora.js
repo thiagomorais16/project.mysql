@@ -71,10 +71,7 @@ async function calRecomendacoes() {
 
     // Defina os dados de entrada para os cálculos
     const data = {
-      numSalasCirurgicas,
-      numCirurgiasPorSalaPorDia,
-      numLeitosUTI,
-      numLeitosInternacao,
+      ...frontendData,
       volumePorCirurgiaUE: 1.5,
       volumePorLeitoUTIUE: 0.5,
       volumePorLeitoInternacaoUE: 0.1,
@@ -374,3 +371,14 @@ const calcularRecomendacoes = (data) => {
     recomendacoesLavadoras,
   };
 };
+
+rl.close();
+
+//calRecomendacoes()
+//.then((recomendacoes) => {
+//console.log("Recomendações calculadas com sucesso:");
+//console.log(recomendacoes);
+//})
+//.catch((error) => {
+//console.error("Erro ao calcular recomendações:", error);
+//});

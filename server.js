@@ -7,13 +7,14 @@ const User = require("./models/model");
 const app = express();
 
 app.use(express.json());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/api", routes);
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 sequelize
-  .sync({ force: true }) // `force: true` recria as tabelas a cada inicialização
+  .sync()
   .then(() => {
     console.log("Banco de dados sincronizado");
   })
