@@ -338,16 +338,16 @@ const calcularRecomendacoes = (data) => {
     const recomendacoesProximas90 = percentuaisUtilizacao
       .filter(({ percentual }) => percentual >= 90 && percentual <= 100)
       .sort((a, b) => Math.abs(90 - a.percentual) - Math.abs(90 - b.percentual))
-      .slice(0, 2);
+      .slice();
 
     if (recomendacoesProximas90.length > 0) {
       return recomendacoesProximas90;
     }
-
-    const recomendacoesEntre20e90 = percentuaisUtilizacao
+    /*ADICIONAR UM ELSE PARA VALOR MENOR QUE 90%*/
+    /*const recomendacoesEntre20e90 = percentuaisUtilizacao
       .filter(({ percentual }) => percentual >= 20 && percentual < 90)
       .sort((a, b) => b.percentual - a.percentual)
-      .slice(0, 2);
+      .slice();
 
     if (recomendacoesEntre20e90.length > 0) {
       return recomendacoesEntre20e90;
@@ -355,8 +355,8 @@ const calcularRecomendacoes = (data) => {
 
     const recomendacoesAleatorias = percentuaisUtilizacao
       .sort(() => 0.5 - Math.random())
-      .slice(0, 2);
-    return recomendacoesAleatorias;
+      .slice();
+    return recomendacoesAleatorias;*/
   };
 
   const recomendacoesAutoclaves = obterRecomendacoes(
@@ -374,11 +374,11 @@ const calcularRecomendacoes = (data) => {
 
 rl.close();
 
-//calRecomendacoes()
-//.then((recomendacoes) => {
-//console.log("Recomendações calculadas com sucesso:");
-//console.log(recomendacoes);
-//})
-//.catch((error) => {
-//console.error("Erro ao calcular recomendações:", error);
-//});
+calRecomendacoes()
+  .then((recomendacoes) => {
+    console.log("Recomendações calculadas com sucesso:");
+    console.log(recomendacoes);
+  })
+  .catch((error) => {
+    console.error("Erro ao calcular recomendações:", error);
+  });
