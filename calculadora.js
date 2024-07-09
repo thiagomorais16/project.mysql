@@ -1,21 +1,20 @@
 const { HospitalData, Lavadora, Autoclave } = require("./models/model");
-const EventEmitter = require("events");
-const readline = require("readline");
+const express = require("express");
 const Sequelize = require("sequelize");
 
-EventEmitter.defaultMaxListeners = 20;
+const app = express();
+const port = 3000;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+app.use(express.json());
 
+// Conexão com o banco de dados
 const sequelize = new Sequelize("eq_calculator", "root", "Th1@g0123", {
   host: "localhost",
   dialect: "mysql",
   port: 3306,
 });
 
+// Função principal
 async function calRecomendacoes(frontendData) {
   try {
     await sequelize.authenticate();
@@ -23,30 +22,32 @@ async function calRecomendacoes(frontendData) {
 
     // Dados do frontend
     const {
-      numSalasCirurgicas,
-      numCirurgiasPorSalaPorDia,
-      processamentoTecidos,
-      diasCirurgias,
+      numeroSalasCirurgicas,
+      numeroCirurgiaSalaDia,
+      tipoProcessamento,
+      diasSemanaCirurgia,
       intervaloPicoCME,
-      numLeitosUTI,
-      numLeitosInternacao,
+      numeroLeitoUTI,
+      numeroLeitoInternacao,
+      numeroLeitoRPA,
+      numeroLeitoOObs,
     } = frontendData;
 
     // Obtenha os dados de lavadoras e autoclaves do banco de dados
     const lavadoras = await Lavadora.findAll();
     const autoclaves = await Autoclave.findAll();
 
-    // Verifique os valores obtidos
-    console.log({
-      numSalasCirurgicas,
-      numCirurgiasPorSalaPorDia,
-      numLeitosUTI,
-      numLeitosInternacao,
-    });
-
     // Defina os dados de entrada para os cálculos
     const data = {
-      ...frontendData,
+      numSalasCirurgicas: numeroSalasCirurgicas,
+      numCirurgiasPorSalaPorDia: numeroCirurgiaSalaDia,
+      tipoProcessamento: tipoProcessamento,
+      diasSemanaCirurgia: diasSemanaCirurgia,
+      intervaloPicoCME: intervaloPicoCME,
+      numLeitosUTI: numeroLeitoUTI,
+      numLeitosInternacao: numeroLeitoInternacao,
+      numLeitoRPA: numeroLeitoRPA,
+      numLeitoOObs: numeroLeitoOObs,
       volumePorCirurgiaUE: 1.5,
       volumePorLeitoUTIUE: 0.5,
       volumePorLeitoInternacaoUE: 0.1,
@@ -55,11 +56,13 @@ async function calRecomendacoes(frontendData) {
       numLavadoras: Math.max(lavadoras.length, 1),
     };
 
+    // Calcular recomendações
     const recomendacoes = calcularRecomendacoes(data, lavadoras, autoclaves);
-    console.log(recomendacoes);
+
     return recomendacoes;
   } catch (error) {
     console.error("Erro ao calcular recomendações:", error);
+    throw error;
   }
 }
 
@@ -79,7 +82,6 @@ const calcularVolumeDiarioTotal = ({
     numLeitosInternacao * volumePorLeitoInternacaoUE;
   const volumeTotalDiarioUE =
     volumeDiarioCirurgiasUE + volumeDiarioUTIsUE + volumeDiarioInternacaoUE;
-
   return volumeTotalDiarioUE;
 };
 
@@ -95,7 +97,6 @@ const calcularPercentuaisUtilizacaoAutoclaves = (
   minutosDisponiveis
 ) => {
   const percentuaisUtilizacao = [];
-
   autoclaves.forEach(
     ({ marca, modelo, capacidadePicoLitros, tempoCicloMinutos }) => {
       const modelos = modelo.map((nome, index) => {
@@ -108,7 +109,6 @@ const calcularPercentuaisUtilizacaoAutoclaves = (
       percentuaisUtilizacao.push(...modelos);
     }
   );
-
   return percentuaisUtilizacao;
 };
 
@@ -118,7 +118,6 @@ const calcularPercentuaisUtilizacaoLavadoras = (
   minutosDisponiveis
 ) => {
   const percentuaisUtilizacao = [];
-
   lavadoras.forEach(
     ({
       marca,
@@ -147,7 +146,6 @@ const calcularPercentuaisUtilizacaoLavadoras = (
       percentuaisUtilizacao.push(...modelos);
     }
   );
-
   return percentuaisUtilizacao;
 };
 
@@ -157,7 +155,6 @@ const calcularRecomendacoes = (data, lavadoras, autoclaves) => {
     volumeTotalDiarioUE,
     data.capacidadeUELitros
   );
-
   console.log("Volume total diário (litros):", volumeTotalDiarioLitros);
   console.log("Volume de pico (litros):", volumePicoLitros);
 
@@ -170,6 +167,7 @@ const calcularRecomendacoes = (data, lavadoras, autoclaves) => {
       autoclaves,
       minutosDisponiveisAutoclaves
     );
+
   const percentuaisUtilizacaoLavadoras = calcularPercentuaisUtilizacaoLavadoras(
     volumePicoLitros,
     lavadoras,
@@ -180,17 +178,9 @@ const calcularRecomendacoes = (data, lavadoras, autoclaves) => {
     const recomendacoesProximas90 = percentuaisUtilizacao
       .filter(({ percentual }) => percentual >= 90 && percentual <= 100)
       .sort((a, b) => Math.abs(90 - a.percentual) - Math.abs(90 - b.percentual))
-      .slice();
+      .slice(0, 2); // Pegue até dois modelos mais próximos de 90%
 
-    if (recomendacoesProximas90.length > 0) {
-      return recomendacoesProximas90;
-    }
-    // Adicionar uma recomendação se o percentual for menor que 90%
-    const recomendacoesMenor90 = percentuaisUtilizacao
-      .filter(({ percentual }) => percentual < 90)
-      .sort((a, b) => a.percentual - b.percentual);
-
-    return recomendacoesMenor90.length > 0 ? recomendacoesMenor90[0] : null;
+    return recomendacoesProximas90;
   };
 
   const recomendacoesAutoclaves = obterRecomendacoes(
@@ -200,31 +190,18 @@ const calcularRecomendacoes = (data, lavadoras, autoclaves) => {
     percentuaisUtilizacaoLavadoras
   );
 
-  return {
-    recomendacoesAutoclaves,
-    recomendacoesLavadoras,
-  };
+  return { recomendacoesAutoclaves, recomendacoesLavadoras };
 };
 
-// Simula dados do frontend para teste
-const frontendData = {
-  numSalasCirurgicas: 12,
-  numCirurgiasPorSalaPorDia: 6,
-  processamentoTecidos: 1,
-  diasCirurgias: 7,
-  intervaloPicoCME: 12,
-  numLeitosUTI: 30,
-  numLeitosInternacao: 149,
-};
+app.post("/calcular", async (req, res) => {
+  try {
+    const recomendacoes = await calRecomendacoes(req.body);
+    res.json(recomendacoes);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao calcular recomendações" });
+  }
+});
 
-calRecomendacoes(frontendData)
-  .then((recomendacoes) => {
-    console.log("Recomendações calculadas com sucesso:");
-    console.log(recomendacoes);
-  })
-  .catch((error) => {
-    console.error("Erro ao calcular recomendações:", error);
-  })
-  .finally(() => {
-    rl.close(); // Coloque rl.close() aqui
-  });
+app.listen(port, () => {
+  console.log(`Servidor rodando em http://localhost:${port}`);
+});
